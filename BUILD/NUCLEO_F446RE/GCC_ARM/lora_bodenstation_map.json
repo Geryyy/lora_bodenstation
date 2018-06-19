@@ -1,0 +1,128 @@
+[
+    {
+        "module": "Radio\\RFM98W.o", 
+        "size": {
+            ".data": 0, 
+            ".bss": 0, 
+            ".text": 1964
+        }
+    }, 
+    {
+        "module": "Radio\\Radio.o", 
+        "size": {
+            ".data": 0, 
+            ".bss": 0, 
+            ".text": 315
+        }
+    }, 
+    {
+        "module": "[fill]", 
+        "size": {
+            ".data": 7, 
+            ".bss": 17, 
+            ".text": 102
+        }
+    }, 
+    {
+        "module": "[lib]\\c.a", 
+        "size": {
+            ".data": 2472, 
+            ".bss": 89, 
+            ".text": 24833
+        }
+    }, 
+    {
+        "module": "[lib]\\gcc.a", 
+        "size": {
+            ".data": 0, 
+            ".bss": 0, 
+            ".text": 3112
+        }
+    }, 
+    {
+        "module": "[lib]\\misc", 
+        "size": {
+            ".data": 12, 
+            ".bss": 28, 
+            ".text": 208
+        }
+    }, 
+    {
+        "module": "libfifo\\libfifo.o", 
+        "size": {
+            ".data": 0, 
+            ".bss": 0, 
+            ".text": 14
+        }
+    }, 
+    {
+        "module": "libsmp\\libsmp.o", 
+        "size": {
+            ".data": 0, 
+            ".bss": 0, 
+            ".text": 280
+        }
+    }, 
+    {
+        "module": "main.o", 
+        "size": {
+            ".data": 0, 
+            ".bss": 0, 
+            ".text": 178
+        }
+    }, 
+    {
+        "module": "mbed-os\\drivers", 
+        "size": {
+            ".data": 4, 
+            ".bss": 144, 
+            ".text": 922
+        }
+    }, 
+    {
+        "module": "mbed-os\\features", 
+        "size": {
+            ".data": 4, 
+            ".bss": 88, 
+            ".text": 108
+        }
+    }, 
+    {
+        "module": "mbed-os\\hal", 
+        "size": {
+            ".data": 4, 
+            ".bss": 68, 
+            ".text": 1753
+        }
+    }, 
+    {
+        "module": "mbed-os\\platform", 
+        "size": {
+            ".data": 264, 
+            ".bss": 221, 
+            ".text": 2878
+        }
+    }, 
+    {
+        "module": "mbed-os\\rtos", 
+        "size": {
+            ".data": 168, 
+            ".bss": 6073, 
+            ".text": 10426
+        }
+    }, 
+    {
+        "module": "mbed-os\\targets", 
+        "size": {
+            ".data": 5, 
+            ".bss": 576, 
+            ".text": 12165
+        }
+    }, 
+    {
+        "summary": {
+            "static_ram": 10244, 
+            "total_flash": 62198
+        }
+    }
+]
