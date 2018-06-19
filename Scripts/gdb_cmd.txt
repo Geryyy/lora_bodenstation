@@ -1,0 +1,2 @@
+// watch 64b of memory @ 0x0074ae70
+-exec x/64b 0x74ae70
