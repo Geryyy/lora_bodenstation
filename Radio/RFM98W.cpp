@@ -1,9 +1,12 @@
 #include "RFM98W.h"
 #include "globals.h"
 
-RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT)
-		: Radio(), spi(MOSI,MISO,SCK), cs(CS,1), reset(RESET,1), dio0(INTERRUPT)
+RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout, bool debug)
+		: Radio(debug), spi(MOSI,MISO,SCK), cs(CS,1), reset(RESET,1), dio0(INTERRUPT)
 {
+	debugprint("RFM98W()");
+
+	blockSendTimeout = timeout;
     spi.format(8,0); /* 8 bits; mode 0: CPOL = 0, CPHA = 0 */
 	spi.frequency(1000000);
 
@@ -25,17 +28,57 @@ RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESE
 	lora_settings.messageSize = LORA_PACKET_LENGTH;
 	lora_settings.transmitCompleteClb = NULL; //lora_transmitComplete;
 	lora_init(&lora_settings);
+
+	startreceive();
 }
 
-/* plementation of virutal functions of parent class */
+/* implementation of virtual function defined in parent class */
 int RFM98W::serviceRadio(){
-    /* todo: implement */
-    return 0;
+    uint8_t loraPacket[LORA_PACKET_LENGTH];
+	uint8_t ret = 1;
+
+	debugprint("serviceRadio()");
+
+	lora_poll();
+
+	if (lora_getStatus() == send)
+		return 1;
+
+	uint8_t i;
+	uint32_t dataAvailable = fifo_datasize(&sendFifo);
+	uint32_t dataRead;
+	if (dataAvailable > 0) {
+		if (dataAvailable >= LORA_PACKET_LENGTH) {
+			ret = 0;
+			dataRead = fifo_read_bytes(loraPacket, &sendFifo, LORA_PACKET_LENGTH);
+			lora_sendBytes(loraPacket, LORA_PACKET_LENGTH);
+		}
+		else
+		{
+			if(beginnToWaitTimestamp == 0)
+			{
+				beginnToWaitTimestamp = time(NULL);
+			}
+			// send data after timeout and pad remaining packet space with zero data
+			else if((time(NULL)-beginnToWaitTimestamp) > blockSendTimeout)
+			{
+				beginnToWaitTimestamp = 0;
+				dataRead = fifo_read_bytes(loraPacket, &sendFifo, LORA_PACKET_LENGTH);
+				for (i = dataRead; i < sizeof(loraPacket); i++) {
+					loraPacket[i] = 0;
+				}
+				lora_sendBytes(loraPacket, LORA_PACKET_LENGTH);
+			}
+		}
+	}
+	return ret;
 }
 
 int RFM98W::sendBytes(unsigned char *data, int len){
     uint8_t loraPacket[LORA_PACKET_LENGTH];
 	uint8_t ret = SUCCESS;
+
+	debugprint("sendBytes()");
 
 	lora_poll();
 
@@ -68,6 +111,8 @@ int RFM98W::sendBytes(unsigned char *data, int len){
 
 void RFM98W::lora_reset()
 {
+	debugprint("lora_reset()");
+
 	reset.write(0);
 	wait_ms(10);
 	reset.write(1);
@@ -83,6 +128,8 @@ uint8_t RFM98W::lora_readVersion()
 
 void RFM98W::lora_init(loraSettings_t* settings)
 {
+	debugprint("lora_init()");
+
 	loraLocked = 0;
 	lora_reset();
 
@@ -107,15 +154,17 @@ void RFM98W::lora_init(loraSettings_t* settings)
 	{
 		lora_noCrc();
 	}
-	if (settings->receivecallback)
-		lora_onReceive(settings->receivecallback);
-	else
-		lora_onReceive(0);
 
-	if (settings->transmitCompleteClb)
-		_transmitCompleteClb = settings->transmitCompleteClb;
-	else
-		_transmitCompleteClb = 0;
+	// if (settings->receivecallback)
+	// 	lora_onReceive(settings->receivecallback);
+	// else
+	// 	lora_onReceive(0);
+
+
+	// if (settings->transmitCompleteClb)
+	// 	_transmitCompleteClb = settings->transmitCompleteClb;
+	// else
+	// 	_transmitCompleteClb = 0;
 
 	lora_setIdle();
 
@@ -131,10 +180,21 @@ void RFM98W::lora_deinit()
 
 uint8_t RFM98W::lora_ready()
 {
+	debugprint("lora_ready()");
+
 	loraStatus_e stat = lora_getStatus();
 	return (stat != send) && (stat != receive) && (stat != disconnected);
 }
 
+
+int RFM98W::startreceive(){
+	return lora_setReceive();
+}
+
+int RFM98W::stopreceive(){
+	/* todo: implement */
+	return ERROR;
+}
 
 //###########################PRIVATE FUNCTIONS##############################################
 
@@ -186,6 +246,8 @@ void RFM98W::PIOINT1_IRQHandler(void)
 
 void RFM98W::lora_poll()
 {
+	debugprint("lora_poll()");
+
 	if (dio0.read())
 	{
 		lora_handleDio0Rise();
@@ -198,7 +260,7 @@ void RFM98W::lora_poll()
 
 
 
-
+/************ low level IO ************/
 
 uint8_t RFM98W::lora_readRegister(uint8_t address)
 {
@@ -218,6 +280,8 @@ void RFM98W::lora_writeRegisterSafe(uint8_t address, uint8_t value)
 	if (mode != (MODE_LONG_RANGE_MODE | MODE_SLEEP)) lora_writeRegister(REG_OP_MODE, mode);
 }
 
+
+
 loraStatus_e RFM98W::lora_getStatus()
 {
 	uint8_t mode = lora_getMode();
@@ -236,6 +300,8 @@ loraStatus_e RFM98W::lora_getStatus()
 
 uint8_t RFM98W::lora_sendBytes(const uint8_t* buffer, uint8_t length)
 {
+	debugprint("lora_sendBytes()");
+
 	loraStatus_e stat = lora_getStatus();
 	if((stat == send) || (stat == disconnected))
 	return 0;
@@ -255,6 +321,8 @@ uint8_t RFM98W::lora_sendBytes(const uint8_t* buffer, uint8_t length)
 
 void RFM98W::lora_setMessageSize(uint8_t size)
 {
+	debugprint("lora_setMessageSize()");
+
 	if(size > 0)
 	{
 		lora_implicitHeaderMode();
@@ -272,21 +340,29 @@ uint8_t RFM98W::lora_getMessageSize()
 	return messageSize;
 }
 
-void RFM98W::lora_setReceive()
+int RFM98W::lora_setReceive()
 {
+	debugprint("lora_setReceive()");
+
 	if(!lora_ready())
-	return;
-		lora_writeRegister(REG_DIO_MAPPING_1, 0);
-		if(lora_getMode() != (MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS))
-		{
-			lora_writeRegister(REG_PAYLOAD_LENGTH, lora_getMessageSize());
-			lora_writeRegister(REG_FIFO_ADDR_PTR, 0);
-			lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS);
-		}
+		return ERROR;
+
+	lora_writeRegister(REG_DIO_MAPPING_1, 0);
+	if(lora_getMode() != (MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS))
+	{
+		lora_writeRegister(REG_PAYLOAD_LENGTH, lora_getMessageSize());
+		lora_writeRegister(REG_FIFO_ADDR_PTR, 0);
+		lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_CONTINUOUS);
+	}
+
+	return SUCCESS;
 }
 
 uint8_t RFM98W::lora_parsePacket() {
 	uint8_t packetLength = 0;
+
+	debugprint("lora_parsePacket()");
+
 	loraStatus_e stat = lora_getStatus();
 	if(stat != send && stat != disconnected)
 	{
@@ -330,17 +406,25 @@ uint8_t RFM98W::lora_parsePacket() {
 
 uint8_t RFM98W::lora_packetRssi() {
 	uint8_t reg;
-		reg = lora_readRegister(REG_PKT_RSSI_VALUE);
+
+	debugprint("lora_packetRssi()");
+
+	reg = lora_readRegister(REG_PKT_RSSI_VALUE);
 	return (reg - (_frequency < 868E6 ? 164 : 157));
 }
 
 float RFM98W::lora_packetSnr() {
 	uint8_t reg;
-		reg = lora_readRegister(REG_PKT_SNR_VALUE);
+
+	debugprint("lora_packetSnr()");
+
+	reg = lora_readRegister(REG_PKT_SNR_VALUE);
 	return ((int8_t) reg) * 0.25;
 }
 
 uint8_t RFM98W::lora_available() {
+	debugprint("lora_available()");
+
 	loraStatus_e stat = lora_getStatus();
 	if(stat == send ||stat == disconnected)
 	return 0;
@@ -349,7 +433,99 @@ uint8_t RFM98W::lora_available() {
 	return (reg - _packetIndex);
 }
 
+
+
+int8_t RFM98W::lora_getTemperature()
+{
+	int8_t temp;
+	uint8_t regVal;
+
+	debugprint("lora_getTemperature()");
+
+		regVal = lora_readRegister(REG_TEMP);
+
+	temp = regVal & 0x7F;
+	if((regVal & 0x80))
+	{
+		temp *= -1;
+	}
+	return temp;
+}
+
+// void RFM98W::lora_onReceive(void (*callback)(void)) {
+// 	_onReceive = callback;
+// }
+
+
+uint8_t RFM98W::lora_getMode()
+{
+	uint8_t mode;
+	mode = lora_readRegister(REG_OP_MODE);
+
+	if(_debug){
+		debugprint("lora_getMode()");
+		switch(mode){
+			case MODE_LONG_RANGE_MODE: debugprint("long range mode"); break;
+			case MODE_SLEEP: debugprint("sleep mode"); break;
+			case MODE_STDBY: debugprint("standby mode"); break;
+			case MODE_TX: debugprint("tx mode"); break;
+			case MODE_RX_CONTINUOUS: debugprint("rx continuous mode"); break;
+			case MODE_RX_SINGLE: debugprint("rx single mode"); break;
+			default: debugprint("default mode"); break;
+		}
+	}
+
+	return mode;
+}
+
+
+void RFM98W::lora_handleDio0Rise()
+{
+	debugprint("lora_handleDio0Rise()");
+
+	uint8_t irqFlags;
+	lora_writeRegister(REG_PAYLOAD_LENGTH, lora_getMessageSize());
+	irqFlags = lora_readRegister(REG_IRQ_FLAGS);
+	lora_writeRegister(REG_IRQ_FLAGS, irqFlags);
+	if (irqFlags & IRQ_RX_DONE_MASK)
+	{
+		if ((irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0)
+		{
+			_packetIndex = 0;
+			// if (_onReceive) _onReceive();
+			/* proccess rx data */
+			lora_receiveData();
+		}
+	}
+	else if (irqFlags & IRQ_TX_DONE_MASK)
+	{
+		// if (_transmitCompleteClb) _transmitCompleteClb();
+		lora_sendDataComplete();
+	}
+}
+
+ void RFM98W::lora_receiveData(void) {
+	debugprint("lora_receiveData()");
+
+	int dataSize;
+	uint8_t data[LORA_PACKET_LENGTH];
+	dataSize = lora_readBytes(data, LORA_PACKET_LENGTH);
+	fifo_write_bytes(data, &receiveFifo, dataSize);
+}
+
+ void RFM98W::lora_sendDataComplete(void){
+	debugprint("lora_sendDataComplete()");
+	if(fifo_datasize(&sendFifo) < LORA_PACKET_LENGTH)
+		lora_setReceive(); //Goto receive after transmition
+}
+
+
+
+/************ IO Methodes ************/
+
 int16_t RFM98W::lora_read(uint8_t* data) {
+	debugprint("lora_read()");
+
 	if (!lora_available()) {
 		return ERROR;
 	}
@@ -367,6 +543,9 @@ uint16_t RFM98W::lora_readBytes(uint8_t* buffer, uint16_t length)
 {
 	uint16_t i = 0;
 	uint8_t data;
+
+	debugprint("lora_readBytes()");
+
 	while( lora_read(&data) == SUCCESS)
 	{
 		if(i == length)
@@ -378,6 +557,8 @@ uint16_t RFM98W::lora_readBytes(uint8_t* buffer, uint16_t length)
 }
 
 int16_t RFM98W::lora_peek() {
+	debugprint("lora_peek()");
+
 	if (!lora_available()) {
 		return -1;
 	}
@@ -394,33 +575,23 @@ int16_t RFM98W::lora_peek() {
 	return b;
 }
 
-int8_t RFM98W::lora_getTemperature()
-{
-	int8_t temp;
-	uint8_t regVal;
-		regVal = lora_readRegister(REG_TEMP);
-
-	temp = regVal & 0x7F;
-	if((regVal & 0x80))
-	{
-		temp *= -1;
-	}
-	return temp;
-}
-
-void RFM98W::lora_onReceive(void (*callback)(void)) {
-	_onReceive = callback;
-}
+/************ Config Methodes ************/
 
 void RFM98W::lora_setIdle() {
-		lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_STDBY);
+	debugprint("lora_setIdle()");
+
+	lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_STDBY);
 }
 
 void RFM98W::lora_setSleep() {
-		lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_SLEEP);
+	debugprint("lora_setIdle()");
+
+	lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_SLEEP);
 }
 
 void RFM98W::lora_setTxPower(uint8_t level) {
+	debugprint("lora_setTxPower()");
+
 	if (level < 2) {
 		level = 2;
 		} else if (level > 17) {
@@ -431,6 +602,8 @@ void RFM98W::lora_setTxPower(uint8_t level) {
 
 void RFM98W::lora_setFrequency(uint32_t frequency) {
 	_frequency = frequency;
+
+	debugprint("lora_setFrequency()");
 
 	uint64_t frf = ((uint64_t) frequency << 19) / 32000000;
 	uint8_t mode = lora_getMode();
@@ -444,6 +617,8 @@ void RFM98W::lora_setFrequency(uint32_t frequency) {
 }
 
 void RFM98W::lora_setSpreadingFactor(uint8_t sf) {
+	debugprint("lora_setSpreadingFactor()");
+
 	if (sf < 6) {
 		sf = 6;
 		} else if (sf > 12) {
@@ -469,6 +644,8 @@ void RFM98W::lora_setSpreadingFactor(uint8_t sf) {
 
 void RFM98W::lora_setSignalBandwidth(uint32_t sbw) {
 	uint8_t bw;
+
+	debugprint("lora_setSignalBandwidth()");
 
 	if (sbw <= 7.8E3) {
 		bw = 0;
@@ -496,6 +673,8 @@ void RFM98W::lora_setSignalBandwidth(uint32_t sbw) {
 }
 
 void RFM98W::lora_setCodingRate4(uint8_t denominator) {
+	debugprint("lora_setCodingRate4()");
+
 	if (denominator < 5) {
 		denominator = 5;
 		} else if (denominator > 8) {
@@ -508,6 +687,8 @@ void RFM98W::lora_setCodingRate4(uint8_t denominator) {
 }
 
 void RFM98W::lora_setPreambleLength(uint16_t length) {
+	debugprint("lora_setPreambleLength()");
+
 	uint8_t mode = lora_getMode();
 	if(mode != (MODE_LONG_RANGE_MODE | MODE_SLEEP))
 	lora_setSleep();
@@ -518,15 +699,11 @@ void RFM98W::lora_setPreambleLength(uint16_t length) {
 }
 
 void RFM98W::lora_setSyncWord(uint8_t sw) {
-		lora_writeRegisterSafe(REG_SYNC_WORD, sw);
+	debugprint("setSyncWord()");
+
+	lora_writeRegisterSafe(REG_SYNC_WORD, sw);
 }
 
-uint8_t RFM98W::lora_getMode()
-{
-	uint8_t mode;
-		mode = lora_readRegister(REG_OP_MODE);
-	return mode;
-}
 
 void RFM98W::lora_crc() {
 		lora_writeRegisterSafe(REG_MODEM_CONFIG_2,
@@ -553,25 +730,5 @@ void RFM98W::lora_explicitHeaderMode()
 void RFM98W::lora_implicitHeaderMode() {
 		lora_writeRegister(REG_MODEM_CONFIG_1,
 		lora_readRegister(REG_MODEM_CONFIG_1) | 0x01);
-}
-
-void RFM98W::lora_handleDio0Rise()
-{
-	uint8_t irqFlags;
-	lora_writeRegister(REG_PAYLOAD_LENGTH, lora_getMessageSize());
-	irqFlags = lora_readRegister(REG_IRQ_FLAGS);
-	lora_writeRegister(REG_IRQ_FLAGS, irqFlags);
-	if (irqFlags & IRQ_RX_DONE_MASK)
-	{
-		if ((irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0)
-		{
-			_packetIndex = 0;
-			if (_onReceive) _onReceive();
-		}
-	}
-	else if (irqFlags & IRQ_TX_DONE_MASK)
-	{
-		if (_transmitCompleteClb) _transmitCompleteClb();
-	}
 }
 

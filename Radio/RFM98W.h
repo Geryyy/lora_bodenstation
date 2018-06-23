@@ -6,6 +6,7 @@
 
 #include "mbed.h"
 #include "Radio.h"
+#include "globals.h"
 
 // registers
 #define REG_FIFO                 0x00
@@ -97,15 +98,18 @@ private:
 
     uint32_t _frequency;
     int _packetIndex;
-    void (*_onReceive)(void);
-    void (*_transmitCompleteClb)(void);
+    // void (*_onReceive)(void);
+    // void (*_transmitCompleteClb)(void);
     uint8_t messageSize;
     volatile uint8_t loraLocked;
 
 /* Methods */
 public:
-    RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT);
+    RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout=200, bool debug=false);
     int serviceRadio();
+    
+    int startreceive();
+    int stopreceive();
 
     void lora_init(loraSettings_t* settings);
     void lora_reset();
@@ -114,6 +118,14 @@ public:
     uint8_t lora_ready();
 
 private:
+    // service radio 
+    uint32_t blockSendTimeout;
+
+    uint32_t beginnToWaitTimestamp;
+
+
+
+
     int sendBytes(unsigned char *data, int len);
 
     void spi_init(void);
@@ -130,7 +142,7 @@ private:
     void lora_setMessageSize(uint8_t size);
     uint8_t lora_getMessageSize();
     void lora_onReceive(void (*callback)(void));
-    void lora_setReceive();
+    int lora_setReceive();
     void lora_setIdle();
     void lora_setSleep();
     void lora_setTxPower(uint8_t level);
@@ -159,7 +171,7 @@ private:
     uint8_t lora_locked();
     void lora_handleDio0Rise();
 
-
-
-
+    // callbacks
+     void lora_receiveData(void);
+     void lora_sendDataComplete(void);
 };

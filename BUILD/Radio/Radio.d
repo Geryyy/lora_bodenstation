@@ -1,6 +1,5 @@
 Radio/Radio.o: ../Radio/Radio.cpp ../mbed_config.h ../Radio/Radio.h \
- .././libsmp/libsmp.h .././libfifo/libfifo.h .././mbed-os/mbed.h \
- .././mbed-os/rtos/rtos.h \
+ .././mbed-os/mbed.h .././mbed-os/rtos/rtos.h \
  .././mbed-os/rtos/TARGET_CORTEX/mbed_rtos_storage.h \
  .././mbed-os/rtos/TARGET_CORTEX/rtx5/RTX/Source/rtx_lib.h \
  .././mbed-os/rtos/TARGET_CORTEX/rtx5/RTX/Source/rtx_core_c.h \
@@ -207,4 +206,5 @@ Radio/Radio.o: ../Radio/Radio.cpp ../mbed_config.h ../Radio/Radio.h \
  .././mbed-os/platform/FileHandle.h .././mbed-os/platform/DirHandle.h \
  .././mbed-os/platform/CriticalSectionLock.h \
  .././mbed-os/platform/DeepSleepLock.h .././mbed-os/platform/Callback.h \
- .././mbed-os/platform/FunctionPointer.h
+ .././mbed-os/platform/FunctionPointer.h .././libsmp/libsmp.h \
+ .././libfifo/libfifo.h ../Radio/globals.h
