@@ -25,7 +25,7 @@
 #define IN_BUFFER_SIZE 64 //  (SERIAL_BUFFER_SIZE = 64)
 #define RING_BUFFER_SIZE 2*IN_BUFFER_SIZE //RF Transmit Ring Buffer size, should be greater as UART Buffer
 #define UART_BAUD_RATE 256000
-#define LORA_FREQUENCY 433.1E5
+#define LORA_FREQUENCY 433E6
 #define LORA_TX_POWER 2 //power in dB, values between 2 and 17
 #define LORA_SPREADING_FACTOR 10 //values between 6 and 12, default 7 (with 6 implicit header mode must be used)
 #define LORA_SIGNAL_BANDWIDTH 500E3 //bandwith in Hz, default 125E3, supported: 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, and 250E3 500E3

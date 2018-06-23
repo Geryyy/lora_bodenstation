@@ -105,7 +105,7 @@ private:
 /* Methods */
 public:
     RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT);
-    virtual int serviceRadio();
+    int serviceRadio();
 
     void lora_init(loraSettings_t* settings);
     void lora_reset();
@@ -114,7 +114,7 @@ public:
     uint8_t lora_ready();
 
 private:
-    virtual int sendBytes(unsigned char *data, int len);
+    int sendBytes(unsigned char *data, int len);
 
     void spi_init(void);
     
