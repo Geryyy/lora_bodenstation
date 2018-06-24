@@ -1,8 +1,8 @@
 #include "RFM98W.h"
 #include "globals.h"
 
-RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout, bool debug)
-		: Radio(debug), spi(MOSI,MISO,SCK), cs(CS,1), reset(RESET,1), dio0(INTERRUPT)
+RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout, SMPcallback_t frameReady_callback, SMPcallback_t rogueFrame_callback, bool debug)
+		: Radio(frameReady_callback, rogueFrame_callback, debug), spi(MOSI,MISO,SCK), cs(CS,1), reset(RESET,1), dio0(INTERRUPT)
 {
 	debugprint("RFM98W()");
 
@@ -50,7 +50,9 @@ int RFM98W::serviceRadio(){
 	if (dataAvailable > 0) {
 		if (dataAvailable >= LORA_PACKET_LENGTH) {
 			ret = 0;
+			sendFifo_mutex.lock();
 			dataRead = fifo_read_bytes(loraPacket, &sendFifo, LORA_PACKET_LENGTH);
+			sendFifo_mutex.unlock();
 			lora_sendBytes(loraPacket, LORA_PACKET_LENGTH);
 		}
 		else
@@ -63,7 +65,9 @@ int RFM98W::serviceRadio(){
 			else if((time(NULL)-beginnToWaitTimestamp) > blockSendTimeout)
 			{
 				beginnToWaitTimestamp = 0;
+				sendFifo_mutex.lock();
 				dataRead = fifo_read_bytes(loraPacket, &sendFifo, LORA_PACKET_LENGTH);
+				sendFifo_mutex.unlock();
 				for (i = dataRead; i < sizeof(loraPacket); i++) {
 					loraPacket[i] = 0;
 				}
@@ -510,7 +514,18 @@ void RFM98W::lora_handleDio0Rise()
 	int dataSize;
 	uint8_t data[LORA_PACKET_LENGTH];
 	dataSize = lora_readBytes(data, LORA_PACKET_LENGTH);
+
+	if(_debug){
+		printf("received Bytes:\n");
+		for(int i = 0; i<dataSize; i++){
+			printf("%c",data[i]);
+		}
+	}
+
+	receiveFifo_mutex.lock();
 	fifo_write_bytes(data, &receiveFifo, dataSize);
+	SMP_RecieveInBytes(data, dataSize, &smp);
+	receiveFifo_mutex.unlock();
 }
 
  void RFM98W::lora_sendDataComplete(void){

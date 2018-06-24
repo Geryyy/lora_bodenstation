@@ -105,7 +105,7 @@ private:
 
 /* Methods */
 public:
-    RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout=200, bool debug=false);
+    RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout = 200, SMPcallback_t frameReadyCallback = NULL, SMPcallback_t rogueFrameCallback = NULL, bool debug = false);
     int serviceRadio();
     
     int startreceive();

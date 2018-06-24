@@ -6,32 +6,37 @@
 #include <cstddef>
 
 
-Radio::Radio(bool debug){
+Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, bool debug){
     _debug = debug;
     debugprint("Radio()");
     // SMP
     fifo_init(&fifo,buffer,sizeof(buffer));
     smp.buffer = &fifo;
-    smp.frameReadyCallback = NULL;
-    smp.rogueFrameCallback = 0;
+    smp.frameReadyCallback = frameReadyCallback;
+    smp.rogueFrameCallback = rogueFrameCallback;
     SMP_Init(&smp);
 
     // initialize Data Fifos
     fifo_init(&sendFifo, sendBuffer, sizeof(sendBuffer));
 	fifo_init(&receiveFifo, receiveBuffer, sizeof(receiveBuffer));
-
 }
 
 
 uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
     debugprint("readData()");
-    return fifo_read_bytes(data, &receiveFifo, max_len);
+    receiveFifo_mutex.lock();
+    uint32_t rx_len = fifo_read_bytes(data, &receiveFifo, max_len);
+    receiveFifo_mutex.unlock();
+    return rx_len;
 }
 
 /* writes data to sendfifo and returns number of written bytes */
 uint32_t Radio::sendData(uint8_t* data, uint32_t len){
     debugprint("readData()");
-    return fifo_write_bytes(data, &sendFifo, len);
+    sendFifo_mutex.lock();
+    uint32_t tx_len =  fifo_write_bytes(data, &sendFifo, len);
+    sendFifo_mutex.unlock();
+    return tx_len;
 }
 
 int Radio::readPacket(char* data, int* len){
@@ -55,19 +60,11 @@ int Radio::sendPacket(char* data, int len){
         printf("\n\n");
     }
 
-    while(txlen>0){
-        if(txlen >= TX_MAX){
-            sendBytes(messageStart,TX_MAX);
-            txlen -= TX_MAX;
-            messageStart += TX_MAX;
-        }
-        else{
-            // send remaining data
-            sendBytes(messageStart,txlen);
-            txlen -= txlen; // break;
-        }
-    }
-    return SUCCESS;
+    /* send data over radio */
+    if(sendData(messageStart, txlen) == txlen)
+        return SUCCESS;
+    else
+        return ERROR;
 }
 
 void Radio::debugprint(const char* msg){
