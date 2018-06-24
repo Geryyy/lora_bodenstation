@@ -39,30 +39,13 @@ void radioTask(){
 Serial pc(USBTX, USBRX, 115200);
 
 int main(){
-    
     printf("Lora Bodenstation V0.1\nGerald Ebmer 2018\n\n");    
-
     char msg[] = "Hello World!\n";
-    uint8_t rxmsg[256];
     radioThread.start(radioTask);
 
     while(true){
         wait(3);
-        
         // printf("transmit data\n");
         // radio.sendPacket(msg,sizeof(msg));
-
-        
-        // radio.sendData((uint8_t*)msg,sizeof(msg));
-        
-        // printf("received msg: \t");
-        // uint32_t len = radio.readData(rxmsg,256);
-        // for(uint32_t i = 0; i<len; i++){
-        //     printf("%c",rxmsg[i]);
-        // }
-        // printf("\n\n");
-
-        // radio.sendPacket(msg,sizeof(msg));
-        // printf("Packet send\n");
     }
 }
