@@ -46,8 +46,8 @@ PROJECT := lora_bodenstation
 ###############################################################################
 # Objects and Paths
 
-OBJECTS += ./Radio/RFM98W.o
-OBJECTS += ./Radio/Radio.o
+OBJECTS += ./radio/RFM98W.o
+OBJECTS += ./radio/Radio.o
 OBJECTS += ./libfifo/libfifo.o
 OBJECTS += ./libsmp/libsmp.o
 OBJECTS += ./main.o
@@ -377,7 +377,7 @@ OBJECTS += ./mbed-os/targets/TARGET_STM/us_ticker_32b.o
 
 INCLUDE_PATHS += -I../
 INCLUDE_PATHS += -I../.
-INCLUDE_PATHS += -I.././Radio
+INCLUDE_PATHS += -I.././radio
 INCLUDE_PATHS += -I.././Scripts
 INCLUDE_PATHS += -I.././libfifo
 INCLUDE_PATHS += -I.././libsmp

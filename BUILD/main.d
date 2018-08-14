@@ -206,6 +206,6 @@ main.o: ../main.cpp ../mbed_config.h .././mbed-os/mbed.h \
  .././mbed-os/platform/FileHandle.h .././mbed-os/platform/DirHandle.h \
  .././mbed-os/platform/CriticalSectionLock.h \
  .././mbed-os/platform/DeepSleepLock.h .././mbed-os/platform/Callback.h \
- .././mbed-os/platform/FunctionPointer.h .././Radio/RFM98W.h \
- .././Radio/Radio.h .././libsmp/libsmp.h .././libfifo/libfifo.h \
- .././Radio/globals.h
+ .././mbed-os/platform/FunctionPointer.h .././radio/RFM98W.h \
+ .././radio/Radio.h .././libsmp/libsmp.h .././libfifo/libfifo.h \
+ .././radio/globals.h

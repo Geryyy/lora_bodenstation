@@ -45,7 +45,8 @@ int main(){
 
     while(true){
         wait(3);
-        // printf("transmit data\n");
-        // radio.sendPacket(msg,sizeof(msg));
+        printf("transmit data\n");
+        radio.sendPacket(msg,sizeof(msg));
+        radio.startreceive();
     }
 }
