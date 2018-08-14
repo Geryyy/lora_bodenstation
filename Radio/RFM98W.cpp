@@ -75,6 +75,9 @@ int RFM98W::serviceRadio(){
 			}
 		}
 	}
+	
+		startreceive();
+	
 	return ret;
 }
 
