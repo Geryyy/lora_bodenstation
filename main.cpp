@@ -84,14 +84,22 @@ void serialRadioTunnel(){
         }
 
         if(i>=PACKET_LENGTH){
+#ifdef SMP
             radio.sendPacket(msg,PACKET_LENGTH);
+#else
+            radio.sendData((uint8_t*)msg,PACKET_LENGTH);
+#endif
             i = 0;
             time1 = time(NULL);
             // printf("full packet\n");
         }
 
         if( ((time(NULL)-time1) > TIMEOUT) && (i > 0) ){
+#ifdef SMP
             radio.sendPacket(msg,i);
+#else
+            radio.sendData((uint8_t*)msg,i);
+#endif
             i = 0;
             time1 = time(NULL);
             // printf("Timeout\n");
