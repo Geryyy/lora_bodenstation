@@ -18,6 +18,7 @@ void serialRadioTunnel(void);
 
 Serial pc(USBTX, USBRX, 115200);
 Thread radioThread;
+Thread transmitThread;
 RFM98W radio(PB_5, PB_4, PB_3, PB_10, PA_8, PA_0, 2, smp_frameReady, NULL, false);
 
 signed char smp_frameReady(fifo_t* buffer) //Frame wurde empfangen
@@ -44,65 +45,53 @@ signed char smp_frameReady(fifo_t* buffer) //Frame wurde empfangen
 }
 
 
+CircularBuffer<char,64> txfifo;
+
 void radioTask(){
     while(true){
         radio.serviceRadio();
-        wait(0.2);
+        wait(0.1);
     }
 }
 
-
-
 int main(){
+    
     printf("Lora Bodenstation V0.1\nGerald Ebmer 2018\n\n");    
     radioThread.start(radioTask);
-    serialRadioTunnel();
+    transmitThread.start(serialRadioTunnel);
+    // serialRadioTunnel();
 
     while(true){
-        // shoud not reach this point
+        if(pc.readable() == true){
+            txfifo.push(pc.getc());
+        }
     }
 }
 
 
 #define PACKET_LENGTH 24
 
+void radiotransmit(char* msg, int len){
+#ifdef SMP
+        radio.sendPacket(msg,len);
+#else
+        radio.sendData((uint8_t*)msg,len);
+#endif
+}
+
 void serialRadioTunnel(){
-    static time_t time1;
-    time_t TIMEOUT = 3;
-    char msg[PACKET_LENGTH];
-    static int i = 0;
+   static char msg[PACKET_LENGTH];
+   static Timer t;
 
-    time1 = time(NULL);
-
-    while(true){
-        if(pc.readable() == true){
-            msg[i] = pc.getc();
-            if(i==0){
-                time1 = time(NULL);
-            }
-            i++;
-        }
-
-        if(i>=PACKET_LENGTH){
-#ifdef SMP
-            radio.sendPacket(msg,PACKET_LENGTH);
-#else
-            radio.sendData((uint8_t*)msg,PACKET_LENGTH);
-#endif
-            i = 0;
-            time1 = time(NULL);
-            // printf("full packet\n");
-        }
-
-        if( ((time(NULL)-time1) > TIMEOUT) && (i > 0) ){
-#ifdef SMP
-            radio.sendPacket(msg,i);
-#else
-            radio.sendData((uint8_t*)msg,i);
-#endif
-            i = 0;
-            time1 = time(NULL);
-            // printf("Timeout\n");
-        }
-    }
+   while(true){
+       if(!txfifo.empty()){
+           int i = 0;
+           while(!txfifo.empty() && i<PACKET_LENGTH){
+               txfifo.pop(msg[i]);
+               i++;
+           }
+           radiotransmit(msg,i);
+       }
+       wait(0.1);
+   }
 }
