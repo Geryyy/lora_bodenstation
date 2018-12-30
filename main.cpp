@@ -27,7 +27,7 @@ RFM98W radiophy(PB_5, PB_4, PB_3, PB_10, PA_8, PA_0, 2, false);
 
 
 // RFM98W radiophy(PB_15, PB_14, PB_13, PB_12, PC_6, PC_7, 0, false);
-Radio radio(smp_frameReady,smp_rogueframeReady,&radiophy, Radio::host, true);
+Radio radio(smp_frameReady,smp_rogueframeReady,&radiophy, Radio::host, false);
 
 signed char smp_rogueframeReady(fifo_t* buffer){
     
@@ -77,12 +77,14 @@ int main(){
 
     while(true){
         if(pc.readable() == true){
-            txfifo.push(pc.getc());
+            // txfifo.push(pc.getc());
+            uint8_t c = (uint8_t)pc.getc();
+            radio.sendData(&c,1);
         }
 
         /* for debugging */
         // wait(0.01);
-        printOnTerminal(); // display log output (xprint)
+        //printOnTerminal(); // display log output (xprint)
     }
 }
 

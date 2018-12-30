@@ -1,0 +1,11 @@
+{
+     "artifact_name": "groundstation",
+    "config": {
+        "welcome_string": {
+            "help": "The string printed on the display on start-up",
+            "value": "\"Hello!\""
+        }
+    }
+}
+
+

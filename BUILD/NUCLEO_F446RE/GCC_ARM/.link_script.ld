@@ -1,7 +1,7 @@
 MEMORY
 {
   FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 512K
-  RAM (rwx) : ORIGIN = 0x200001C4, LENGTH = 128k - 0x1C4
+  RAM (rwx) : ORIGIN = 0x200001C8, LENGTH = 128k - (0x1C4+0x4)
 }
 ENTRY(Reset_Handler)
 SECTIONS
@@ -43,33 +43,33 @@ SECTIONS
         _sdata = .;
         *(vtable)
         *(.data*)
-        . = ALIGN(4);
+        . = ALIGN(8);
         PROVIDE_HIDDEN (__preinit_array_start = .);
         KEEP(*(.preinit_array))
         PROVIDE_HIDDEN (__preinit_array_end = .);
-        . = ALIGN(4);
+        . = ALIGN(8);
         PROVIDE_HIDDEN (__init_array_start = .);
         KEEP(*(SORT(.init_array.*)))
         KEEP(*(.init_array))
         PROVIDE_HIDDEN (__init_array_end = .);
-        . = ALIGN(4);
+        . = ALIGN(8);
         PROVIDE_HIDDEN (__fini_array_start = .);
         KEEP(*(SORT(.fini_array.*)))
         KEEP(*(.fini_array))
         PROVIDE_HIDDEN (__fini_array_end = .);
         KEEP(*(.jcr*))
-        . = ALIGN(4);
+        . = ALIGN(8);
         __data_end__ = .;
         _edata = .;
     } > RAM
     .bss :
     {
-        . = ALIGN(4);
+        . = ALIGN(8);
         __bss_start__ = .;
         _sbss = .;
         *(.bss*)
         *(COMMON)
-        . = ALIGN(4);
+        . = ALIGN(8);
         __bss_end__ = .;
         _ebss = .;
     } > RAM
