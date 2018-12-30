@@ -1,5 +1,7 @@
 #include "mbed.h"
 #include "RFM98W.h"
+#include "Radio.h"
+#include "logprintf.h"
 
 /* Pinbelegung */
 /*
@@ -14,12 +16,22 @@ INT     PA_0
 */
 
 signed char smp_frameReady(fifo_t* buffer);
+signed char smp_rogueframeReady(fifo_t* buffer);
 void serialRadioTunnel(void);
 
 Serial pc(USBTX, USBRX, 115200);
 Thread radioThread;
 Thread transmitThread;
-RFM98W radio(PB_5, PB_4, PB_3, PB_10, PA_8, PA_0, 2, smp_frameReady, NULL, false);
+
+RFM98W radiophy(PB_5, PB_4, PB_3, PB_10, PA_8, PA_0, 2, false);
+
+
+// RFM98W radiophy(PB_15, PB_14, PB_13, PB_12, PC_6, PC_7, 0, false);
+Radio radio(smp_frameReady,smp_rogueframeReady,&radiophy, Radio::host, true);
+
+signed char smp_rogueframeReady(fifo_t* buffer){
+    
+}
 
 signed char smp_frameReady(fifo_t* buffer) //Frame wurde empfangen
 {
@@ -48,9 +60,11 @@ signed char smp_frameReady(fifo_t* buffer) //Frame wurde empfangen
 CircularBuffer<char,64> txfifo;
 
 void radioTask(){
+    static float radioTZyklus = 0.1;
     while(true){
-        radio.serviceRadio();
-        wait(0.1);
+        // radio.serviceRadio();
+        radio.run(radioTZyklus);
+        wait(radioTZyklus);
     }
 }
 
@@ -65,6 +79,10 @@ int main(){
         if(pc.readable() == true){
             txfifo.push(pc.getc());
         }
+
+        /* for debugging */
+        // wait(0.01);
+        printOnTerminal(); // display log output (xprint)
     }
 }
 

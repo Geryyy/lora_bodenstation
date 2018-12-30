@@ -4,8 +4,11 @@
  * @brief: header file for RFM98W lora module support class
  */
 
+#ifndef RFM98W_H
+#define RFM98W_H
+
 #include "mbed.h"
-#include "Radio.h"
+#include "radiophy.h"
 #include "globals.h"
 
 // registers
@@ -15,27 +18,45 @@
 #define REG_FRF_MID              0x07
 #define REG_FRF_LSB              0x08
 #define REG_PA_CONFIG            0x09
+#define REG_PA_RAMP              0x0a
+#define REG_OCP                  0x0b
 #define REG_LNA                  0x0c
 #define REG_FIFO_ADDR_PTR        0x0d
 #define REG_FIFO_TX_BASE_ADDR    0x0e
 #define REG_FIFO_RX_BASE_ADDR    0x0f
 #define REG_FIFO_RX_CURRENT_ADDR 0x10
+
+#define REG_IRQ_MASK             0x11
 #define REG_IRQ_FLAGS            0x12
 #define REG_RX_NB_BYTES          0x13
-#define REG_PKT_RSSI_VALUE       0x1a
-#define REG_PKT_SNR_VALUE        0x1b
+
+#define REG_PKT_SNR_VALUE        0x19
+#define REG_PKT_RSSI_VALUE       0x1A
+
+
+
 #define REG_MODEM_CONFIG_1       0x1d
+
 #define REG_MODEM_CONFIG_2       0x1e
+
+
 #define REG_PREAMBLE_MSB         0x20
 #define REG_PREAMBLE_LSB         0x21
+
 #define REG_PAYLOAD_LENGTH       0x22
-#define REG_RSSI_WIDEBAND        0x2c
-#define REG_DETECTION_OPTIMIZE   0x31
-#define REG_DETECTION_THRESHOLD  0x37
-#define REG_SYNC_WORD            0x39
+
+
+
+// #define REG_RSSI_WIDEBAND        0x2c
+
+// #define REG_DETECTION_OPTIMIZE   0x31
+// #define REG_DETECTION_THRESHOLD  0x37
+
+// #define REG_SYNC_WORD            0x39
 #define REG_DIO_MAPPING_1        0x40
+#define REG_DIO_MAPPING_2        0x41
 #define REG_VERSION              0x42
-#define REG_TEMP				 0x3C
+// #define REG_TEMP				 0x3C
 
 // modes
 #define MODE_LONG_RANGE_MODE     0x80
@@ -80,9 +101,12 @@ typedef enum
 }loraStatus_e;
 
 
-class RFM98W : public Radio
+class RFM98W : public RadioPHY
 {
 public:
+    #define MAX_RX_BUFFER_SIZE (2*LORA_PACKET_LENGTH)
+    uint8_t rxbuffer[MAX_RX_BUFFER_SIZE];
+    uint16_t rxbufferlen;
 
 
 private:
@@ -93,8 +117,13 @@ private:
     // Reset
     DigitalOut reset;
     // Interrupt
-    DigitalIn dio0;
+    InterruptIn dio0;
 
+    // eventqueue and thread to handle isr calls outside isr context
+    EventQueue queue;
+    Thread eventThread;
+
+    bool _debug;
 
     uint32_t _frequency;
     int _packetIndex;
@@ -105,7 +134,19 @@ private:
 
 /* Methods */
 public:
-    RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout = 200, SMPcallback_t frameReadyCallback = NULL, SMPcallback_t rogueFrameCallback = NULL, bool debug = false);
+    RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout = 200,  bool debug = false);
+    
+    int getpacketlength();
+    int transmit(uint8_t* data, uint16_t len);
+    int setreceive(void);
+    int lora_setReceiveSingle(void);
+    int sleep();
+    int checkrxdata();
+    uint16_t getrxdata(uint8_t* data, uint16_t maxlen);
+    int getrssi();
+    float getsnr();
+
+
     int serviceRadio();
     
     int startreceive();
@@ -122,9 +163,10 @@ private:
     uint32_t blockSendTimeout;
 
     uint32_t beginnToWaitTimestamp;
+    // int packetlength;
 
 
-
+    void debugprint(const char* msg);
 
     int sendBytes(unsigned char *data, int len);
 
@@ -135,7 +177,7 @@ private:
     void lora_writeRegisterSafe(uint8_t address, uint8_t value);
     uint8_t lora_singleTransfer(uint8_t address, uint8_t value);
     void lora_fifoTransfer(uint8_t address, const uint8_t* values, uint8_t length);
-    void PIOINT1_IRQHandler(void);
+    void DIO0_IRQHandler(void);
     void lora_poll(void);
 
     loraStatus_e lora_getStatus();
@@ -159,15 +201,15 @@ private:
     uint8_t lora_getMode();
 
     uint8_t lora_parsePacket();
-    uint8_t lora_packetRssi();
+    int16_t lora_packetRssi();
     float lora_packetSnr();
     uint8_t lora_available();
     int16_t lora_read();
     uint16_t lora_readBytes(uint8_t* buffer, uint16_t length);
     uint8_t lora_sendBytes(const uint8_t* buffer, uint8_t length);
     int16_t lora_peek();
-    uint8_t lora_random();
-    int8_t lora_getTemperature();
+    // uint8_t lora_random();
+    // int8_t lora_getTemperature();
     uint8_t lora_locked();
     void lora_handleDio0Rise();
 
@@ -175,3 +217,6 @@ private:
      void lora_receiveData(void);
      void lora_sendDataComplete(void);
 };
+
+
+#endif // RFM98W_H

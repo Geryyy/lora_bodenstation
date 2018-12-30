@@ -1,5 +1,5 @@
-main.o: ../main.cpp ../mbed_config.h .././mbed-os/mbed.h \
- .././mbed-os/rtos/rtos.h \
+Utilities/logprintf.o: ../Utilities/logprintf.cpp ../mbed_config.h \
+ .././mbed-os/mbed.h .././mbed-os/rtos/rtos.h \
  .././mbed-os/rtos/TARGET_CORTEX/mbed_rtos_storage.h \
  .././mbed-os/rtos/TARGET_CORTEX/rtx5/RTX/Source/rtx_lib.h \
  .././mbed-os/rtos/TARGET_CORTEX/rtx5/RTX/Source/rtx_core_c.h \
@@ -206,6 +206,4 @@ main.o: ../main.cpp ../mbed_config.h .././mbed-os/mbed.h \
  .././mbed-os/platform/FileHandle.h .././mbed-os/platform/DirHandle.h \
  .././mbed-os/platform/CriticalSectionLock.h \
  .././mbed-os/platform/DeepSleepLock.h .././mbed-os/platform/Callback.h \
- .././mbed-os/platform/FunctionPointer.h .././radio/RFM98W.h \
- .././radio/Radio.h .././libsmp/libsmp.h .././libfifo/libfifo.h \
- .././radio/globals.h
+ .././mbed-os/platform/FunctionPointer.h
