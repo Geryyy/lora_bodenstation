@@ -40,3 +40,12 @@ void printOnTerminal(){
     }
     fflush(stdout);
 }
+
+void printOnTerminal(Serial *pc){
+    while(!ringbuffer.empty()){
+        char c;
+        ringbuffer.pop(c);
+        pc->putc(c);
+    }
+    // pc->sync();
+}

@@ -10,5 +10,6 @@
 
 void xprintf(const char *format, ...);
 void printOnTerminal();
+void printOnTerminal(Serial *pc);
 
 #endif //LOGPRINTF_H

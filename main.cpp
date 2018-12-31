@@ -18,16 +18,19 @@ INT     PA_0
 signed char smp_frameReady(fifo_t* buffer);
 signed char smp_rogueframeReady(fifo_t* buffer);
 void serialRadioTunnel(void);
+void debugTask(void);
 
+Serial debugpc(PC_10,PC_5,115200);
 Serial pc(USBTX, USBRX, 115200);
 Thread radioThread;
 Thread transmitThread;
+Thread debugthread;
 
 RFM98W radiophy(PB_5, PB_4, PB_3, PB_10, PA_8, PA_0, 2, false);
 
 
 // RFM98W radiophy(PB_15, PB_14, PB_13, PB_12, PC_6, PC_7, 0, false);
-Radio radio(smp_frameReady,smp_rogueframeReady,&radiophy, Radio::host, false);
+Radio radio(smp_frameReady,smp_rogueframeReady,&radiophy, Radio::host, true);
 
 signed char smp_rogueframeReady(fifo_t* buffer){
     
@@ -73,18 +76,29 @@ int main(){
     printf("Lora Bodenstation V0.1\nGerald Ebmer 2018\n\n");    
     radioThread.start(radioTask);
     transmitThread.start(serialRadioTunnel);
+    debugthread.start(debugTask);
     // serialRadioTunnel();
-
+    uint8_t c;
     while(true){
-        if(pc.readable() == true){
+        // while(pc.readable() == true){
             // txfifo.push(pc.getc());
-            uint8_t c = (uint8_t)pc.getc();
+            c = (uint8_t)pc.getc();
+            // xprintf("input: %d\n",c);
             radio.sendData(&c,1);
-        }
+        // }
+        // wait_ms(10);
 
         /* for debugging */
         // wait(0.01);
-        //printOnTerminal(); // display log output (xprint)
+        // printOnTerminal(&debugpc); // display log output (xprint)
+    }
+}
+
+void debugTask(){
+
+    while(true){
+        printOnTerminal(&debugpc);
+        wait_ms(10);
     }
 }
 
