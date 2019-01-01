@@ -45,9 +45,10 @@ signed char smp_rogueframeReady(fifo_t* buffer){
 
 signed char smp_frameReady(fifo_t* buffer) //Frame wurde empfangen
 {
+    xprintf("\n--> SMP-Frame received!!!\n");
 #ifdef SMP
     int32_t len = fifo_datasize(buffer);
-    xprintf("\n--> SMP-Frame received!!!\n");
+
     for(int i = 0; i<len; i++){
         uint8_t ch;
         fifo_read_byte(&ch,buffer);

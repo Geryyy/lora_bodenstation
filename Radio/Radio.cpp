@@ -14,9 +14,9 @@ Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback,
     // timing
     timing.Tonair = 0.5; // seconds .. time to transmit lora packet over air
     timing.Ttx = timing.Tonair;
-    timing.Tidle = 0*timing.Tonair; // 4
-    timing.Trx = 10*timing.Tonair; // 3
-    timing.Tsleep = 0*timing.Tonair; // 4
+    timing.Tidle = 4*timing.Tonair; // 4
+    timing.Trx = 3*timing.Tonair; // 3
+    timing.Tsleep = 4*timing.Tonair; // 4
 
     debugprint("Radio::Radio()");
     // radio physical layer object
@@ -102,7 +102,15 @@ void Radio::run(float TZyklus){
         int len = readPacket();
         // sync state machine with remote/host's state machine
         if(len>0){
-            t = timing.Trx/2.0; // slight timing offset
+            switch(opmode){
+                case Radio::remote:
+                    // do nothing
+                    break;
+                case Radio::host:
+                    t = timing.Trx + timing.Tsleep - timing.Tonair;   
+                    break;
+                default: LOG("Radio::run() invalid mode");        
+            }    
         }
     }
 
@@ -188,7 +196,13 @@ int Radio::readPacket(){
     if(_debug){
         xprintf("DEBUG: Radio::readPacket() \tlen=%d data: ",len);
     }
-
+    
+    /* test: empty rxbuffer after each rx packet */
+    while(!RxBuf.empty()){
+        uint8_t t;
+        RxBuf.pop(t);
+    }
+    
     for(int i=0; i<len; i++){
         uint8_t c = phy->rxdata[i]; 
         RxBuf.push(c); // save raw data for readData() function
