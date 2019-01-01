@@ -1,30 +1,69 @@
 {
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
-    "version": "0.1.0",
-    "name": "make",
-    "isShellCommand": true,
-    "showOutput": "always",
-    "problemMatcher": {
-        "owner": "cpp",
-        "fileLocation": ["relative", "${workspaceRoot}/mbed-os"],
-        "pattern": {
-            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-            "file": 1,
-            "line": 2,
-            "column": 3,
-            "severity": 4,
-            "message": 5
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "-t",
+                "GCC_ARM",
+                "-m",
+                "NUCLEO_F446RE"
+            ],
+            "windows": {
+                "command": "mbed"
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "mbed",
+            "args": [
+                "compile",
+                "-c"
+            ],
+            "windows": {
+                "command": "mbed"
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+
+        {
+            "label": "download",
+            "type": "process",
+            "command": "ST-LINK_CLI.exe",
+            "args": [
+                "-C", "SWD", 
+                "-P", "./BUILD/NUCLEO_F446RE/GCC_ARM/groundstation.bin", "0x08000000",
+                "-V", 
+                "-Rst"
+            ],
+            "windows": {
+                "command": "C:\\Program Files (x86)\\STMicroelectronics\\STM32 ST-LINK Utility\\ST-LINK Utility\\ST-LINK_CLI.exe"
+            },
+            
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
         }
-    },
-    "args": ["-j"],
-    "linux": {
-        "command": "make"
-    },
-    "osx": {
-        "command": "make"
-    },
-    "windows": {
-        "command": "make.exe"
-    }
+    ]
 }

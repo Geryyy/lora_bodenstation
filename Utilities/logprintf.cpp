@@ -1,7 +1,7 @@
 #include "mbed.h"
 #include "stdio.h"
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1024
 
 static CircularBuffer<char, BUFFER_SIZE> ringbuffer;
 

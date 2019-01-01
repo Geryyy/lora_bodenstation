@@ -3,6 +3,9 @@
     "C_Cpp.addWorkspaceRootToIncludePath": false,
     "C_Cpp.intelliSenseEngine": "Tag Parser",
     "files.associations": {
-        "libsmp.h": "c"
+        "libsmp.h": "c",
+        "vector": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
     }
 }

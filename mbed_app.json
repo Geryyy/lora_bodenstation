@@ -1,6 +1,13 @@
 {
-     "artifact_name": "groundstation",
-    "config": {
+    "macros": [
+        "MBED_HEAP_STATS_ENABLED=1",
+        "MBED_STACK_STATS_ENABLED=1",
+        "MBED_MEM_TRACING_ENABLED=1"
+    ],
+     
+    "artifact_name": "groundstation",
+     
+     "config": {
         "welcome_string": {
             "help": "The string printed on the display on start-up",
             "value": "\"Hello!\""
