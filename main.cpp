@@ -20,12 +20,12 @@ signed char smp_rogueframeReady(fifo_t* buffer);
 void serialRadioTunnel(void);
 void debugTask(void);
 
-// Serial debugpc(PC_10,PC_5,115200);
-// Serial pc(USBTX, USBRX, 115200);
+Serial debugpc(PC_10,PC_5,115200);
+Serial pc(USBTX, USBRX, 115200);
 
 /* debug: change serials */
-Serial pc(PC_10,PC_5,115200);
-Serial debugpc(USBTX, USBRX, 115200);
+// Serial pc(PC_10,PC_5,115200);
+// Serial debugpc(USBTX, USBRX, 115200);
 
 
 // Thread LEDdriverThread(osPriorityNormal, OS_STACK_SIZE,NULL,"LEDdriverThread");
@@ -81,7 +81,7 @@ void radioTask(){
 
 int main(){
     
-    printf("Lora Bodenstation V0.1\nGerald Ebmer 2018\n\n");    
+    printf("Lora Bodenstation V1.0\nGerald Ebmer 2018\n\n");    
     radioThread.start(radioTask);
     transmitThread.start(serialRadioTunnel);
     debugthread.start(debugTask);
